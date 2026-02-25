@@ -3,18 +3,18 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Patch,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -23,7 +23,7 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  Create(
+  create(
     @Body() createProjectDto: CreateProjectDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -37,16 +37,23 @@ export class ProjectsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
+    return this.projectsService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
+    return this.projectsService.remove(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('file'))
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.projectsService.update(id, updateProjectDto, file);
   }
 }

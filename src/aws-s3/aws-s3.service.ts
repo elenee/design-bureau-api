@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 @Injectable()
 export class AwsS3Service {
@@ -25,12 +29,26 @@ export class AwsS3Service {
       Key: key,
       Bucket: this.bucketName,
       Body: buffer,
+      ContentType: 'image/jpeg',
     };
 
     const command = new PutObjectCommand(config);
     await this.s3.send(command);
 
-    const url = `https://${this.bucketName}.s3.amazonaws.com/${key}`;
-    return url;
+    return `https://${this.bucketName}.s3.amazonaws.com/${key}`;
+  }
+
+  async deleteFile(key) {
+    if (!key) throw new BadRequestException();
+    try {
+      const config = {
+        Key: key,
+        Bucket: this.bucketName,
+      };
+      const command = new DeleteObjectCommand(config);
+      await this.s3.send(command);
+    } catch (error) {
+      throw new BadRequestException("Couldn't delete file");
+    }
   }
 }

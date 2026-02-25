@@ -1,8 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { TeamMember } from './entities/team-member.entity';
 import { AwsS3Service } from 'src/aws-s3/aws-s3.service';
 import { randomUUID } from 'crypto';
@@ -19,7 +23,6 @@ export class TeamMembersService {
     file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('File is required');
-    console.log(file)
 
     const ext = file.mimetype.split('/')[1];
     const fileId = `team-members/${randomUUID()}.${ext}`;
@@ -38,15 +41,49 @@ export class TeamMembersService {
     return this.teamMemberModel.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} teamMember`;
+  async findOne(id: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
+    const teamMember = await this.teamMemberModel.findById(id);
+    if (teamMember) throw new NotFoundException('Team member not found');
+    return teamMember;
   }
 
-  update(id: number, updateTeamMemberDto: UpdateTeamMemberDto) {
-    return `This action updates a #${id} teamMember`;
+  async remove(id: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
+    const teamMember = await this.teamMemberModel.findByIdAndDelete(id);
+    if (!teamMember) throw new NotFoundException('Team member not found');
+    await this.awsService.deleteFile(teamMember.key);
+    return `image deleted successfully`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} teamMember`;
+  async update(
+    id: string,
+    updateTeamMemberDto: UpdateTeamMemberDto,
+    file: Express.Multer.File,
+  ) {
+    if (!isValidObjectId(id)) throw new BadRequestException();
+    const existingMember = await this.teamMemberModel.findById(id);
+    if (!existingMember) throw new BadRequestException('Team member not found');
+
+    let updateData: any = { ...updateTeamMemberDto };
+
+    if (file) {
+      const ext = file.mimetype.split('/')[1];
+      const newFileId = `team-members/${randomUUID()}.${ext}`;
+
+      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer);
+
+      updateData.url = newUrl;
+      updateData.key = newFileId;
+      await this.awsService.deleteFile(existingMember.key);
+    }
+
+    const updatedMember = await this.teamMemberModel.findByIdAndUpdate(
+      id,
+      updateData,
+      { returnDocument: 'after' },
+    );
+
+    return updatedMember;
   }
 }
