@@ -5,6 +5,10 @@ export class TeamMember {
   @Prop({ type: String })
   name: string;
   @Prop({ type: String })
+  expertise: string;
+  @Prop({ type: String })
+  location: string;
+  @Prop({ type: String })
   position: string;
   @Prop({ required: true })
   url: string;

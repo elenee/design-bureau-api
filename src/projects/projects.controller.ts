@@ -92,4 +92,20 @@ export class ProjectsController {
   ) {
     return this.projectsService.update(id, updateProjectDto, file);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/images')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadImages(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.projectsService.uploadImages(id, file);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/images/:imageId')
+  removeImages(@Param('id') id: string, @Param('imageId') imageId: string) {
+    return this.projectsService.removeImages(id, imageId);
+  }
 }

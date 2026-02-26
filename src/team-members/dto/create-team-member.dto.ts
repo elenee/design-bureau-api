@@ -7,6 +7,14 @@ export class CreateTeamMemberDto {
   name: string;
   @IsNotEmpty()
   @IsString()
+  @Length(3, 30)
+  expertise: string;
+  @IsNotEmpty()
+  @IsString()
+  @Length(3, 30)
+  location: string;
+  @IsNotEmpty()
+  @IsString()
   @Length(3, 20)
   position: string;
 }
