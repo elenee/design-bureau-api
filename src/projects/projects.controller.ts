@@ -61,6 +61,11 @@ export class ProjectsController {
     return this.projectsService.findOne(id);
   }
 
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.projectsService.findBySlug(slug);
+  }
+
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete project' })
   @UseGuards(JwtAuthGuard)

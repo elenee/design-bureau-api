@@ -50,6 +50,12 @@ export class ProjectsService {
     return project;
   }
 
+  async findBySlug(slug: string) {
+    const project = await this.projectModel.findOne({ slug });
+    if (!project) throw new NotFoundException('Project not found');
+    return project;
+  }
+
   async remove(id: string) {
     if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
     const project = await this.projectModel.findByIdAndDelete(id);
