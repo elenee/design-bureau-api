@@ -27,7 +27,7 @@ export class ProjectsService {
 
     const ext = file.mimetype.split('/')[1];
     const fileId = `projects/${randomUUID()}.${ext}`;
-    const url = await this.awsService.uploadFile(fileId, file.buffer);
+    const url = await this.awsService.uploadFile(fileId, file.buffer, file.mimetype);
 
     const image = await this.projectModel.create({
       ...createProjectDto,
@@ -79,7 +79,7 @@ export class ProjectsService {
       const ext = file.mimetype.split('/')[1];
       const newFileId = `projects/${randomUUID()}.${ext}`;
 
-      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer);
+      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer, file.mimetype);
       updateData.url = newUrl;
       updateData.key = newFileId;
 
@@ -100,7 +100,7 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Project not found');
     const ext = file.mimetype.split('/')[1];
     const imageId = `projects/${id}/${randomUUID()}.${ext}`;
-    const imageUrl = await this.awsService.uploadFile(imageId, file.buffer);
+    const imageUrl = await this.awsService.uploadFile(imageId, file.buffer, file.mimetype);
 
     const updatedProject = await this.projectModel.findByIdAndUpdate(
       id,

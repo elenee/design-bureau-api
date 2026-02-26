@@ -21,7 +21,7 @@ export class AwsS3Service {
     });
   }
 
-  async uploadFile(key, buffer) {
+  async uploadFile(key, buffer, mimetype) {
     if (!key || !buffer)
       throw new BadRequestException('Key and buffer is required fields');
 
@@ -29,7 +29,7 @@ export class AwsS3Service {
       Key: key,
       Bucket: this.bucketName,
       Body: buffer,
-      ContentType: 'image/jpeg',
+      ContentType: mimetype,
     };
 
     const command = new PutObjectCommand(config);

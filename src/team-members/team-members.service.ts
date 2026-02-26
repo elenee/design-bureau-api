@@ -26,7 +26,7 @@ export class TeamMembersService {
 
     const ext = file.mimetype.split('/')[1];
     const fileId = `team-members/${randomUUID()}.${ext}`;
-    const url = await this.awsService.uploadFile(fileId, file.buffer);
+    const url = await this.awsService.uploadFile(fileId, file.buffer, file.mimetype);
 
     const image = await this.teamMemberModel.create({
       ...createTeamMemberDto,
@@ -71,7 +71,7 @@ export class TeamMembersService {
       const ext = file.mimetype.split('/')[1];
       const newFileId = `team-members/${randomUUID()}.${ext}`;
 
-      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer);
+      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer, file.mimetype);
 
       updateData.url = newUrl;
       updateData.key = newFileId;
