@@ -16,6 +16,9 @@ export class CreateProjectDto {
   name: string;
   @IsNotEmpty()
   @IsString()
+  subtitle: string;
+  @IsNotEmpty()
+  @IsString()
   location: string;
   @IsNotEmpty()
   @IsNumber()

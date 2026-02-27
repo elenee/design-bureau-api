@@ -7,6 +7,8 @@ import { ProjectProgram } from '../enums/project-program.enum';
 export class Project {
   @Prop({ type: String, required: true })
   name: string;
+  @Prop({ type: String, required: true })
+  subtitle: string;
   @Prop({ type: String })
   slug: string;
   @Prop({ type: String, required: true })
