@@ -24,10 +24,17 @@ export class ProjectsService {
     if (!file) throw new BadRequestException();
 
     const slug = slugify(createProjectDto.name, { lower: true });
+    const existing = await this.projectModel.findOne({ slug });
+    if (existing)
+      throw new BadRequestException('Project with this name already exists');
 
     const ext = file.mimetype.split('/')[1];
     const fileId = `projects/${randomUUID()}.${ext}`;
-    const url = await this.awsService.uploadFile(fileId, file.buffer, file.mimetype);
+    const url = await this.awsService.uploadFile(
+      fileId,
+      file.buffer,
+      file.mimetype,
+    );
 
     const image = await this.projectModel.create({
       ...createProjectDto,
@@ -61,6 +68,9 @@ export class ProjectsService {
     const project = await this.projectModel.findByIdAndDelete(id);
     if (!project) throw new BadRequestException('Project not found');
     await this.awsService.deleteFile(project.key);
+    for (const image of project.images) {
+      await this.awsService.deleteFile(image.key);
+    }
     return 'image deleted successfully';
   }
 
@@ -79,7 +89,11 @@ export class ProjectsService {
       const ext = file.mimetype.split('/')[1];
       const newFileId = `projects/${randomUUID()}.${ext}`;
 
-      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer, file.mimetype);
+      const newUrl = await this.awsService.uploadFile(
+        newFileId,
+        file.buffer,
+        file.mimetype,
+      );
       updateData.url = newUrl;
       updateData.key = newFileId;
 
@@ -100,7 +114,11 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Project not found');
     const ext = file.mimetype.split('/')[1];
     const imageId = `projects/${id}/${randomUUID()}.${ext}`;
-    const imageUrl = await this.awsService.uploadFile(imageId, file.buffer, file.mimetype);
+    const imageUrl = await this.awsService.uploadFile(
+      imageId,
+      file.buffer,
+      file.mimetype,
+    );
 
     const updatedProject = await this.projectModel.findByIdAndUpdate(
       id,
