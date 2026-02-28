@@ -8,6 +8,7 @@ import { AdminModule } from './admin/admin.module';
 import { AwsS3Module } from './aws-s3/aws-s3.module';
 import { TeamMembersModule } from './team-members/team-members.module';
 import { ProjectsModule } from './projects/projects.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ProjectsModule } from './projects/projects.module';
     AwsS3Module,
     TeamMembersModule,
     ProjectsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

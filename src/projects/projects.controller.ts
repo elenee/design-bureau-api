@@ -66,7 +66,7 @@ export class ProjectsController {
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'coverImage', maxCount: 1 },
-      { name: 'images', maxCount: 10 },
+      { name: 'images', maxCount: 100 },
     ]),
   )
   create(
@@ -240,7 +240,7 @@ export class ProjectsController {
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'coverImage', maxCount: 1 },
-      { name: 'images', maxCount: 10 },
+      { name: 'images', maxCount: 100 },
     ]),
   )
   update(
