@@ -20,30 +20,56 @@ export class ProjectsService {
     private awsService: AwsS3Service,
   ) {}
 
-  async create(createProjectDto: CreateProjectDto, file: Express.Multer.File) {
-    if (!file) throw new BadRequestException();
+  async create(
+    createProjectDto: CreateProjectDto,
+    coverImage: Express.Multer.File,
+    images?: Express.Multer.File[],
+  ) {
+    if (!coverImage) throw new BadRequestException('Cover image is required');
 
     const slug = slugify(createProjectDto.name, { lower: true });
     const existing = await this.projectModel.findOne({ slug });
     if (existing)
       throw new BadRequestException('Project with this name already exists');
 
-    const ext = file.mimetype.split('/')[1];
+    const ext = coverImage.mimetype.split('/')[1];
     const fileId = `projects/${randomUUID()}.${ext}`;
     const url = await this.awsService.uploadFile(
       fileId,
-      file.buffer,
-      file.mimetype,
+      coverImage.buffer,
+      coverImage.mimetype,
     );
 
-    const image = await this.projectModel.create({
+    const project = await this.projectModel.create({
       ...createProjectDto,
       slug,
       url,
       key: fileId,
     });
 
-    return image;
+    let uploadedImages: any = [];
+    if (images && images.length > 0) {
+      uploadedImages = await Promise.all(
+        images.map(async (image) => {
+          const imgExt = image.mimetype.split('/')[1];
+          const imageId = `projects/${project._id}/${randomUUID()}.${imgExt}`;
+          const imageUrl = await this.awsService.uploadFile(
+            imageId,
+            image.buffer,
+            image.mimetype,
+          );
+          return { url: imageUrl, key: imageId };
+        }),
+      );
+
+      return await this.projectModel.findByIdAndUpdate(
+        project._id,
+        { $push: { images: { $each: uploadedImages } } },
+        { returnDocument: 'after' },
+      );
+    }
+
+    return project;
   }
 
   findAll() {
