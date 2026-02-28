@@ -6,7 +6,6 @@ import {
   Length,
 } from 'class-validator';
 import { ProjectStatus } from '../enums/project-status.enum';
-import { ProjectProgram } from '../enums/project-program.enum';
 import { ProjectCategory } from '../enums/project-catgeroy.enum';
 import { Type } from 'class-transformer';
 
@@ -28,8 +27,8 @@ export class CreateProjectDto {
   @IsEnum(ProjectCategory)
   category: ProjectCategory;
   @IsNotEmpty()
-  @IsEnum(ProjectProgram)
-  program: ProjectProgram;
+  @IsString()
+  program: string;
   @IsNotEmpty()
   @IsEnum(ProjectStatus)
   status: ProjectStatus;

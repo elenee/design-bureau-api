@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ProjectStatus } from '../enums/project-status.enum';
 import { ProjectCategory } from '../enums/project-catgeroy.enum';
-import { ProjectProgram } from '../enums/project-program.enum';
 
 @Schema({ timestamps: true })
 export class Project {
@@ -17,8 +16,8 @@ export class Project {
   year: number;
   @Prop({ type: String, enum: ProjectCategory, required: true })
   category: ProjectCategory;
-  @Prop({ type: String, enum: ProjectProgram, required: true })
-  program: ProjectProgram;
+  @Prop({ type: String, required: true })
+  program: string;
   @Prop({ type: String, enum: ProjectStatus, required: true })
   status: ProjectStatus;
   @Prop({ type: Number, required: true })
