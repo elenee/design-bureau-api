@@ -7,18 +7,13 @@ import {
   Delete,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
   Patch,
   UploadedFiles,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import {
   ApiBearerAuth,
@@ -232,7 +227,8 @@ export class ProjectsController {
         area: { type: 'number' },
         description: { type: 'string' },
         text: { type: 'string' },
-        file: { type: 'string', format: 'binary' },
+        coverImage: { type: 'string', format: 'binary' },
+        images: { type: 'array', items: { type: 'string', format: 'binary' } },
       },
     },
   })
@@ -241,38 +237,27 @@ export class ProjectsController {
   @ApiResponse({ status: 404, description: 'Project not found' })
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'coverImage', maxCount: 1 },
+      { name: 'images', maxCount: 10 },
+    ]),
+  )
   update(
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.projectsService.update(id, updateProjectDto, file);
-  }
-
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Upload image to project' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['file'],
-      properties: {
-        file: { type: 'string', format: 'binary' },
-      },
+    @UploadedFiles()
+    files: {
+      coverImage?: Express.Multer.File[];
+      images?: Express.Multer.File[];
     },
-  })
-  @ApiResponse({ status: 200, description: 'Image uploaded successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  @UseGuards(JwtAuthGuard)
-  @Post(':id/images')
-  @UseInterceptors(FilesInterceptor('files', 10))
-  uploadImages(
-    @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.projectsService.uploadImages(id, files);
+    return this.projectsService.update(
+      id,
+      updateProjectDto,
+      files.coverImage?.[0],
+      files.images,
+    );
   }
 
   @ApiBearerAuth()

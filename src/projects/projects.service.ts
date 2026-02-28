@@ -11,7 +11,6 @@ import { Project } from './entities/project.entity';
 import { randomUUID } from 'crypto';
 import { AwsS3Service } from 'src/aws-s3/aws-s3.service';
 import slugify from 'slugify';
-import { url } from 'inspector';
 
 @Injectable()
 export class ProjectsService {
@@ -92,18 +91,19 @@ export class ProjectsService {
   async remove(id: string) {
     if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
     const project = await this.projectModel.findByIdAndDelete(id);
-    if (!project) throw new BadRequestException('Project not found');
+    if (!project) throw new NotFoundException('Project not found');
     await this.awsService.deleteFile(project.key);
     for (const image of project.images) {
       await this.awsService.deleteFile(image.key);
     }
-    return 'image deleted successfully';
+    return 'project deleted successfully';
   }
 
   async update(
     id: string,
     updateProjectDto: UpdateProjectDto,
-    file: Express.Multer.File,
+    coverImage?: Express.Multer.File,
+    images?: Express.Multer.File[],
   ) {
     if (!isValidObjectId(id)) throw new BadRequestException();
     const existingProject = await this.projectModel.findById(id);
@@ -111,52 +111,46 @@ export class ProjectsService {
 
     let updateData: any = { ...updateProjectDto };
 
-    if (file) {
-      const ext = file.mimetype.split('/')[1];
+    if (coverImage) {
+      const ext = coverImage.mimetype.split('/')[1];
       const newFileId = `projects/${randomUUID()}.${ext}`;
 
       const newUrl = await this.awsService.uploadFile(
         newFileId,
-        file.buffer,
-        file.mimetype,
+        coverImage.buffer,
+        coverImage.mimetype,
       );
       updateData.url = newUrl;
       updateData.key = newFileId;
 
       await this.awsService.deleteFile(existingProject.key);
     }
+
+    if (images && images.length > 0) {
+      const uploadedImages = await Promise.all(
+        images.map(async (file) => {
+          const ext = file.mimetype.split('/')[1];
+          const imageId = `projects/${id}/${randomUUID()}.${ext}`;
+          const url = await this.awsService.uploadFile(
+            imageId,
+            file.buffer,
+            file.mimetype,
+          );
+          return { url, key: imageId };
+        }),
+      );
+      updateData = {
+        ...updateData,
+        $push: { images: { $each: uploadedImages } },
+      };
+    }
+
     const updatedProject = await this.projectModel.findByIdAndUpdate(
       id,
       updateData,
       { returnDocument: 'after' },
     );
 
-    return updatedProject;
-  }
-
-  async uploadImages(id: string, files: Express.Multer.File[]) {
-    if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
-    const project = await this.projectModel.findById(id);
-    if (!project) throw new NotFoundException('Project not found');
-
-    const uploadedImages = await Promise.all(
-      files.map(async (file) => {
-        const ext = file.mimetype.split('/')[1];
-        const imageId = `projects/${id}/${randomUUID()}.${ext}`;
-        const url = await this.awsService.uploadFile(
-          imageId,
-          file.buffer,
-          file.mimetype,
-        );
-        return { url, key: imageId };
-      }),
-    );
-
-    const updatedProject = await this.projectModel.findByIdAndUpdate(
-      id,
-      { $push: { images: { $each: uploadedImages } } },
-      { returnDocument: 'after' },
-    );
     return updatedProject;
   }
 
@@ -172,7 +166,7 @@ export class ProjectsService {
     if (!projectImage) throw new NotFoundException('image not found');
     await this.awsService.deleteFile(projectImage.key);
 
-    const updatedProject = await this.projectModel.findByIdAndUpdate(
+    await this.projectModel.findByIdAndUpdate(
       id,
       {
         $pull: { images: { _id: imageId } },
