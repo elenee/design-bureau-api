@@ -9,11 +9,12 @@ import {
   UseInterceptors,
   UploadedFile,
   Patch,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import {
   ApiBearerAuth,
@@ -283,13 +284,13 @@ export class ProjectsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   @UseGuards(JwtAuthGuard)
-  @Patch(':id/images')
-  @UseInterceptors(FileInterceptor('file'))
+  @Post(':id/images')
+  @UseInterceptors(FilesInterceptor('files', 10))
   uploadImages(
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.projectsService.uploadImages(id, file);
+    return this.projectsService.uploadImages(id, files);
   }
 
   @ApiBearerAuth()

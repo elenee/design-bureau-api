@@ -108,23 +108,27 @@ export class ProjectsService {
     return updatedProject;
   }
 
-  async uploadImages(id: string, file: Express.Multer.File) {
+  async uploadImages(id: string, files: Express.Multer.File[]) {
     if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
     const project = await this.projectModel.findById(id);
     if (!project) throw new NotFoundException('Project not found');
-    const ext = file.mimetype.split('/')[1];
-    const imageId = `projects/${id}/${randomUUID()}.${ext}`;
-    const imageUrl = await this.awsService.uploadFile(
-      imageId,
-      file.buffer,
-      file.mimetype,
+
+    const uploadedImages = await Promise.all(
+      files.map(async (file) => {
+        const ext = file.mimetype.split('/')[1];
+        const imageId = `projects/${id}/${randomUUID()}.${ext}`;
+        const url = await this.awsService.uploadFile(
+          imageId,
+          file.buffer,
+          file.mimetype,
+        );
+        return { url, key: imageId };
+      }),
     );
 
     const updatedProject = await this.projectModel.findByIdAndUpdate(
       id,
-      {
-        $push: { images: { url: imageUrl, key: imageId } },
-      },
+      { $push: { images: { $each: uploadedImages } } },
       { returnDocument: 'after' },
     );
     return updatedProject;
