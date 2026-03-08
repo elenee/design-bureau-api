@@ -32,6 +32,8 @@ export class Project {
   key: string;
   @Prop({ type: [{ url: String, key: String }], default: [] })
   images: { url: string; key: string }[];
+  @Prop({ type: Boolean, default: false })
+  isFavourite: boolean;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

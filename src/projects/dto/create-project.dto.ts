@@ -1,7 +1,9 @@
 import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Length,
 } from 'class-validator';
@@ -42,4 +44,7 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @IsString()
   text: string;
+  @IsOptional()
+  @IsBoolean()
+  isFavourite: boolean;
 }
