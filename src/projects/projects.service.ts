@@ -9,15 +9,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { Project } from './entities/project.entity';
 import { randomUUID } from 'crypto';
-import { AwsS3Service } from 'src/aws-s3/aws-s3.service';
 import slugify from 'slugify';
+import { CloudinaryService } from 'src/Cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel('Project') private projectModel: Model<Project>,
-    private awsService: AwsS3Service,
-  ) {}
+    private cloudinaryService: CloudinaryService,
+  ) { }
 
   async create(
     createProjectDto: CreateProjectDto,
@@ -33,7 +33,7 @@ export class ProjectsService {
 
     const ext = coverImage.mimetype.split('/')[1];
     const fileId = `projects/${randomUUID()}.${ext}`;
-    const url = await this.awsService.uploadFile(
+    const url = await this.cloudinaryService.uploadFile(
       fileId,
       coverImage.buffer,
       coverImage.mimetype,
@@ -52,7 +52,7 @@ export class ProjectsService {
         images.map(async (image) => {
           const imgExt = image.mimetype.split('/')[1];
           const imageId = `projects/${project._id}/${randomUUID()}.${imgExt}`;
-          const imageUrl = await this.awsService.uploadFile(
+          const imageUrl = await this.cloudinaryService.uploadFile(
             imageId,
             image.buffer,
             image.mimetype,
@@ -92,9 +92,9 @@ export class ProjectsService {
     if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
     const project = await this.projectModel.findByIdAndDelete(id);
     if (!project) throw new NotFoundException('Project not found');
-    await this.awsService.deleteFile(project.key);
+    await this.cloudinaryService.deleteFile(project.key);
     for (const image of project.images) {
-      await this.awsService.deleteFile(image.key);
+      await this.cloudinaryService.deleteFile(image.key);
     }
     return 'project deleted successfully';
   }
@@ -115,7 +115,7 @@ export class ProjectsService {
       const ext = coverImage.mimetype.split('/')[1];
       const newFileId = `projects/${randomUUID()}.${ext}`;
 
-      const newUrl = await this.awsService.uploadFile(
+      const newUrl = await this.cloudinaryService.uploadFile(
         newFileId,
         coverImage.buffer,
         coverImage.mimetype,
@@ -123,7 +123,7 @@ export class ProjectsService {
       updateData.url = newUrl;
       updateData.key = newFileId;
 
-      await this.awsService.deleteFile(existingProject.key);
+      await this.cloudinaryService.deleteFile(existingProject.key);
     }
 
     if (images && images.length > 0) {
@@ -131,7 +131,7 @@ export class ProjectsService {
         images.map(async (file) => {
           const ext = file.mimetype.split('/')[1];
           const imageId = `projects/${id}/${randomUUID()}.${ext}`;
-          const url = await this.awsService.uploadFile(
+          const url = await this.cloudinaryService.uploadFile(
             imageId,
             file.buffer,
             file.mimetype,
@@ -164,7 +164,7 @@ export class ProjectsService {
       (img) => (img as any)._id.toString() === imageId,
     );
     if (!projectImage) throw new NotFoundException('image not found');
-    await this.awsService.deleteFile(projectImage.key);
+    await this.cloudinaryService.deleteFile(projectImage.key);
 
     await this.projectModel.findByIdAndUpdate(
       id,

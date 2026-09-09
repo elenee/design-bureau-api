@@ -8,15 +8,15 @@ import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { TeamMember } from './entities/team-member.entity';
-import { AwsS3Service } from 'src/aws-s3/aws-s3.service';
 import { randomUUID } from 'crypto';
+import { CloudinaryService } from 'src/Cloudinary/cloudinary.service';
 
 @Injectable()
 export class TeamMembersService {
   constructor(
     @InjectModel('TeamMember') private teamMemberModel: Model<TeamMember>,
-    private awsService: AwsS3Service,
-  ) {}
+    private cloudinaryService: CloudinaryService,
+  ) { }
 
   async create(
     createTeamMemberDto: CreateTeamMemberDto,
@@ -26,7 +26,7 @@ export class TeamMembersService {
 
     const ext = file.mimetype.split('/')[1];
     const fileId = `team-members/${randomUUID()}.${ext}`;
-    const url = await this.awsService.uploadFile(fileId, file.buffer, file.mimetype);
+    const url = await this.cloudinaryService.uploadFile(fileId, file.buffer, file.mimetype);
 
     const image = await this.teamMemberModel.create({
       ...createTeamMemberDto,
@@ -52,7 +52,7 @@ export class TeamMembersService {
     if (!isValidObjectId(id)) throw new BadRequestException('Invalid mongo id');
     const teamMember = await this.teamMemberModel.findByIdAndDelete(id);
     if (!teamMember) throw new NotFoundException('Team member not found');
-    await this.awsService.deleteFile(teamMember.key);
+    await this.cloudinaryService.deleteFile(teamMember.key);
     return `image deleted successfully`;
   }
 
@@ -71,11 +71,11 @@ export class TeamMembersService {
       const ext = file.mimetype.split('/')[1];
       const newFileId = `team-members/${randomUUID()}.${ext}`;
 
-      const newUrl = await this.awsService.uploadFile(newFileId, file.buffer, file.mimetype);
+      const newUrl = await this.cloudinaryService.uploadFile(newFileId, file.buffer, file.mimetype);
 
       updateData.url = newUrl;
       updateData.key = newFileId;
-      await this.awsService.deleteFile(existingMember.key);
+      await this.cloudinaryService.deleteFile(existingMember.key);
     }
 
     const updatedMember = await this.teamMemberModel.findByIdAndUpdate(
